@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商務拓展部週誌系統</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React 與 Babel -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <style>
+        @media print {
+            body { background-color: white; }
+            .no-print { display: none !important; }
+            .print-p-0 { padding: 0 !important; }
+            .shadow-lg { box-shadow: none !important; }
+            .border { border: none !important; }
+        }
+        .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-stone-100 text-stone-800">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 1. 定義圖標 ---
+        const Icons = {
+            User: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Briefcase: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
+            TrendingUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+            AlertCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+            Target: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            Copy: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>,
+            FileText: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></svg>,
+            ChevronDown: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
+            ChevronUp: () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>,
+            Plus: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+            Trash2: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
+            Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+            Users: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+            Mail: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
+            CheckCircle: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            Building2: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></svg>,
+            ClipboardList: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>,
+            Phone: () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        };
+
+        // --- 2. 介面組件 ---
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden ${className}`}>
+                {children}
+            </div>
+        );
+
+        const SectionHeader = ({ icon: Icon, title, subtitle, isOpen, toggle }) => (
+            <div 
+                onClick={toggle}
+                className="flex items-center justify-between p-4 bg-stone-50 cursor-pointer hover:bg-stone-100 transition-colors border-b border-stone-100"
+            >
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-orange-100 rounded-lg text-orange-700">
+                        <Icon />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-stone-800">{title}</h3>
+                        {subtitle && <p className="text-xs text-stone-500">{subtitle}</p>}
+                    </div>
+                </div>
+                {isOpen ? <div className="text-stone-400"><Icons.ChevronUp /></div> : <div className="text-stone-400"><Icons.ChevronDown /></div>}
+            </div>
+        );
+
+        const StatusBadge = ({ status }) => {
+            const colors = {
+                '未開始': 'bg-stone-100 text-stone-600',
+                '進行中': 'bg-blue-100 text-blue-700',
+                '已完成': 'bg-green-100 text-green-700',
+                '卡關中': 'bg-red-100 text-red-700',
+            };
+            return <span className={`px-2 py-1 rounded text-xs font-medium ${colors[status]}`}>{status}</span>;
+        };
+
+        // --- 3. 主程式 ---
+        function App() {
+            const [activeTab, setActiveTab] = useState('edit');
+            const [sections, setSections] = useState({
+                basic: true, metrics: true, projects: true, market: true, next: true
+            });
+
+            const [formData, setFormData] = useState({
+                name: '', startDate: '', endDate: '', leaveInfo: '',
+                metrics: {
+                    enterprise_dev_phone: { val: 0, note: '' }, // 新增: 電話開發
+                    enterprise_dev_mail: { val: 0, note: '' },  // 新增: 信件開發
+                    partnership_dev: { val: 0, note: '' },
+                    quotes_sent: { val: 0, note: '' },
+                    orders_signed: { val: 0, note: '' },
+                    deal_amount: { val: 0, note: '' },
+                    maintenance_count: { val: 0, note: '' }
+                },
+                projects: [{ id: 1, name: '', status: '進行中', output: '', blocker: '' }],
+                market: { competitor: '', feedback: '', challenges: '', support: '' },
+                nextWeek: {
+                    enterprise_plan: '', partnership_plan: '', maintenance_plan: '', admin_plan: '',
+                    goal_enterprise_phone: 0, goal_enterprise_mail: 0, // 拆分目標
+                    goal_partner: 0, goal_maintenance: 0
+                }
+            });
+
+            // 初始化
+            useEffect(() => {
+                const saved = localStorage.getItem('bd_weekly_draft_v7'); // Version bump
+                if (saved) {
+                    try { setFormData(JSON.parse(saved)); } catch (e) { console.error(e); }
+                } else {
+                    const today = new Date();
+                    const monday = new Date(today);
+                    monday.setDate(today.getDate() - today.getDay() + 1);
+                    const friday = new Date(today);
+                    friday.setDate(today.getDate() - today.getDay() + 5);
+                    setFormData(prev => ({
+                        ...prev,
+                        startDate: monday.toISOString().split('T')[0],
+                        endDate: friday.toISOString().split('T')[0]
+                    }));
+                }
+            }, []);
+
+            // 自動存檔
+            useEffect(() => {
+                localStorage.setItem('bd_weekly_draft_v7', JSON.stringify(formData));
+            }, [formData]);
+
+            const toggleSection = (key) => setSections(prev => ({ ...prev, [key]: !prev[key] }));
+            const handleBasicChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+            const handleMetricChange = (key, field, value) => setFormData(prev => ({ ...prev, metrics: { ...prev.metrics, [key]: { ...prev.metrics[key], [field]: value } } }));
+            
+            const handleProjectChange = (id, field, value) => setFormData(prev => ({ ...prev, projects: prev.projects.map(p => p.id === id ? { ...p, [field]: value } : p) }));
+            const addProject = () => setFormData(prev => ({ ...prev, projects: [...prev.projects, { id: Date.now(), name: '', status: '進行中', output: '', blocker: '' }] }));
+            const removeProject = (id) => setFormData(prev => ({ ...prev, projects: prev.projects.filter(p => p.id !== id) }));
+            
+            const handleMarketChange = (e) => setFormData(prev => ({ ...prev, market: { ...prev.market, [e.target.name]: e.target.value } }));
+            const handleNextWeekChange = (e) => setFormData(prev => ({ ...prev, nextWeek: { ...prev.nextWeek, [e.target.name]: e.target.value } }));
+
+            // --- 修正後的列印與複製功能 ---
+            const handlePrint = () => {
+                try { window.print(); } catch (e) { alert("請按 Ctrl+P (Command+P) 列印"); }
+            };
+
+            const copyToClipboard = () => {
+                // 計算總企業開發數
+                const totalEnterprise = Number(formData.metrics.enterprise_dev_phone.val) + Number(formData.metrics.enterprise_dev_mail.val);
+                const totalGoal = Number(formData.nextWeek.goal_enterprise_phone) + Number(formData.nextWeek.goal_enterprise_mail);
+
+                let text = `【商務拓展部週誌】${formData.name} (${formData.startDate} ~ ${formData.endDate})\n\n`;
+                text += `一、工作成果數據\n`;
+                text += `• 企業開發：共 ${totalEnterprise} 家 (電話 ${formData.metrics.enterprise_dev_phone.val} / 信件 ${formData.metrics.enterprise_dev_mail.val})\n`;
+                if(formData.metrics.enterprise_dev_phone.note || formData.metrics.enterprise_dev_mail.note) text += `  備註: ${formData.metrics.enterprise_dev_phone.note} ${formData.metrics.enterprise_dev_mail.note}\n`;
+                text += `• 合作開發：接觸 ${formData.metrics.partnership_dev.val} 家 (對象: ${formData.metrics.partnership_dev.note || '無'})\n`;
+                text += `• 報價進度：發出 ${formData.metrics.quotes_sent.val} 份\n`;
+                text += `• 成交結果：回簽 ${formData.metrics.orders_signed.val} 家 (總額 $${formData.metrics.deal_amount.val})\n`;
+                text += `• 關係維護：回暖 ${formData.metrics.maintenance_count.val} 家廠商\n\n`;
+                text += `二、重點專案進度\n`;
+                formData.projects.forEach(p => { if(p.name) text += `• [${p.status}] ${p.name}：${p.output} ${p.blocker ? `(卡關: ${p.blocker})` : ''}\n`; });
+                text += `\n三、市場觀察與挑戰\n• 競品：${formData.market.competitor || '無'}\n• 客戶聲音：${formData.market.feedback || '無'}\n• 需支援：${formData.market.support || '無'}\n\n`;
+                text += `四、下週計畫\n• 預計企業開發：${formData.nextWeek.enterprise_plan || '無'}\n• 預計合作通路：${formData.nextWeek.partnership_plan || '無'}\n• 預計回暖廠商：${formData.nextWeek.maintenance_plan || '無'}\n• 其他重要任務：${formData.nextWeek.admin_plan || '無'}\n• 量化目標：企業共 ${totalGoal} 家 (電 ${formData.nextWeek.goal_enterprise_phone}/信 ${formData.nextWeek.goal_enterprise_mail}) / 合作 ${formData.nextWeek.goal_partner} 家 / 回暖 ${formData.nextWeek.goal_maintenance} 家`;
+                
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(() => alert('內容已複製！')).catch(() => fallbackCopyTextToClipboard(text));
+                } else {
+                    fallbackCopyTextToClipboard(text);
+                }
+            };
+
+            function fallbackCopyTextToClipboard(text) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed"; textArea.style.left = "-9999px";
+                document.body.appendChild(textArea);
+                textArea.focus(); textArea.select();
+                try { document.execCommand('copy'); alert('內容已複製！'); } catch (err) { alert('請手動複製'); }
+                document.body.removeChild(textArea);
+            }
+
+            // 介面渲染
+            return (
+                <div className="min-h-screen pb-20 print:bg-white print:pb-0">
+                    <header className="bg-orange-600 text-white p-4 shadow-md sticky top-0 z-10 no-print">
+                        <div className="max-w-3xl mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-2"><Icons.Briefcase /><h1 className="text-xl font-bold tracking-wide">商務拓展部週誌</h1></div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setActiveTab('edit')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'edit' ? 'bg-white text-orange-600' : 'text-orange-100 hover:bg-orange-700'}`}>填寫</button>
+                                <button onClick={() => setActiveTab('preview')} className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${activeTab === 'preview' ? 'bg-white text-orange-600' : 'text-orange-100 hover:bg-orange-700'}`}>預覽 & 輸出</button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-3xl mx-auto p-4 print:p-0 print:max-w-full">
+                        {activeTab === 'edit' ? (
+                            <div className="space-y-6">
+                                {/* Basic Info */}
+                                <Card><SectionHeader icon={Icons.User} title="基本資訊" subtitle="填表人、日期與出缺勤" isOpen={sections.basic} toggle={() => toggleSection('basic')} />
+                                    {sections.basic && (<div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div><label className="block text-sm font-medium text-stone-600 mb-1">填表人</label><input type="text" name="name" value={formData.name} onChange={handleBasicChange} className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-200 outline-none" placeholder="你的名字" /></div>
+                                        <div><label className="block text-sm font-medium text-stone-600 mb-1">休假日/請假</label><input type="text" name="leaveInfo" value={formData.leaveInfo} onChange={handleBasicChange} className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-200 outline-none" placeholder="例: 12/05 上課" /></div>
+                                        <div><label className="block text-sm font-medium text-stone-600 mb-1">開始日期</label><input type="date" name="startDate" value={formData.startDate} onChange={handleBasicChange} className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-200 outline-none" /></div>
+                                        <div><label className="block text-sm font-medium text-stone-600 mb-1">結束日期</label><input type="date" name="endDate" value={formData.endDate} onChange={handleBasicChange} className="w-full p-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-200 outline-none" /></div>
+                                    </div>)}
+                                </Card>
+
+                                {/* Metrics - Updated with Split Enterprise Dev */}
+                                <Card><SectionHeader icon={Icons.TrendingUp} title="工作成果數據" subtitle="開發、報價與成交" isOpen={sections.metrics} toggle={() => toggleSection('metrics')} />
+                                    {sections.metrics && (<div className="p-5 space-y-6">
+                                        {/* Hunting */}
+                                        <div>
+                                            <h4 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-3 flex items-center gap-2"><div className="w-4 h-4"><Icons.Users /></div> 主動開發 (Hunting)</h4>
+                                            
+                                            {/* 拆分後的企業開發 */}
+                                            <div className="bg-stone-50 p-3 rounded-lg border border-stone-100 mb-4">
+                                                <label className="flex justify-between text-sm font-medium text-stone-700 mb-2"><span>企業訂單開發 (家)</span></label>
+                                                <div className="grid grid-cols-2 gap-3 mb-2">
+                                                    <div>
+                                                        <label className="text-xs text-stone-500 mb-1 block flex items-center gap-1"><div className="w-3 h-3"><Icons.Phone/></div> 電話開發</label>
+                                                        <input type="number" value={formData.metrics.enterprise_dev_phone.val} onChange={(e) => handleMetricChange('enterprise_dev_phone', 'val', e.target.value)} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none" />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs text-stone-500 mb-1 block flex items-center gap-1"><div className="w-3 h-3"><Icons.Mail/></div> 信件/EDM</label>
+                                                        <input type="number" value={formData.metrics.enterprise_dev_mail.val} onChange={(e) => handleMetricChange('enterprise_dev_mail', 'val', e.target.value)} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none" />
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input type="text" value={formData.metrics.enterprise_dev_phone.note} onChange={(e) => handleMetricChange('enterprise_dev_phone', 'note', e.target.value)} placeholder="電話備註 (例: 中秋專案)" className="w-full text-xs p-1 bg-transparent border-b border-stone-200 focus:border-orange-400 outline-none text-stone-500" />
+                                                    <input type="text" value={formData.metrics.enterprise_dev_mail.note} onChange={(e) => handleMetricChange('enterprise_dev_mail', 'note', e.target.value)} placeholder="信件備註 (例: 補習班名單)" className="w-full text-xs p-1 bg-transparent border-b border-stone-200 focus:border-orange-400 outline-none text-stone-500" />
+                                                </div>
+                                            </div>
+
+                                            {/* Partnership */}
+                                            <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
+                                                <label className="flex justify-between text-sm font-medium text-stone-700 mb-1"><span>異業合作開發 (家)</span></label>
+                                                <input type="number" value={formData.metrics.partnership_dev.val} onChange={(e) => handleMetricChange('partnership_dev', 'val', e.target.value)} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none mb-2" />
+                                                <input type="text" value={formData.metrics.partnership_dev.note} onChange={(e) => handleMetricChange('partnership_dev', 'note', e.target.value)} placeholder="合作對象 (例: 婚宴會館)" className="w-full text-xs p-1 bg-transparent border-b border-stone-200 focus:border-orange-400 outline-none text-stone-500" />
+                                            </div>
+                                        </div>
+                                        {/* Process, Maintenance ... (Rest same as before) */}
+                                        <div>
+                                            <h4 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-3 flex items-center gap-2"><div className="w-4 h-4"><Icons.Mail /></div> 報價與成交 (Process)</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
+                                                    <label className="text-sm font-medium text-stone-700 mb-1 block">報價單發送 (份)</label>
+                                                    <input type="number" value={formData.metrics.quotes_sent.val} onChange={(e) => handleMetricChange('quotes_sent', 'val', e.target.value)} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none mb-2" />
+                                                    <input type="text" value={formData.metrics.quotes_sent.note} onChange={(e) => handleMetricChange('quotes_sent', 'note', e.target.value)} placeholder="重點客戶" className="w-full text-xs p-1 bg-transparent border-b border-stone-200 focus:border-orange-400 outline-none text-stone-500" />
+                                                </div>
+                                                <div className="bg-orange-50 p-3 rounded-lg border border-orange-100">
+                                                    <div className="flex gap-2 mb-2">
+                                                        <div className="flex-1"><label className="text-sm font-medium text-orange-900 mb-1 block">回簽數</label><input type="number" value={formData.metrics.orders_signed.val} onChange={(e) => handleMetricChange('orders_signed', 'val', e.target.value)} className="w-full p-2 border border-orange-200 rounded focus:border-orange-500 outline-none bg-white" /></div>
+                                                        <div className="flex-1"><label className="text-sm font-medium text-orange-900 mb-1 block">總金額</label><input type="number" value={formData.metrics.deal_amount.val} onChange={(e) => handleMetricChange('deal_amount', 'val', e.target.value)} className="w-full p-2 border border-orange-200 rounded focus:border-orange-500 outline-none bg-white" /></div>
+                                                    </div>
+                                                    <input type="text" value={formData.metrics.orders_signed.note} onChange={(e) => handleMetricChange('orders_signed', 'note', e.target.value)} placeholder="成交備註" className="w-full p-2 bg-white border border-orange-200 rounded text-sm focus:border-orange-500 outline-none text-stone-600" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h4 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-3 flex items-center gap-2"><div className="w-4 h-4"><Icons.CheckCircle /></div> 關係維護 (Maintenance)</h4>
+                                            <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
+                                                <label className="text-sm font-medium text-stone-700 mb-1 block">合作廠商/客戶回暖數 (家)</label>
+                                                <input type="number" value={formData.metrics.maintenance_count.val} onChange={(e) => handleMetricChange('maintenance_count', 'val', e.target.value)} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none mb-2" />
+                                                <input type="text" value={formData.metrics.maintenance_count.note} onChange={(e) => handleMetricChange('maintenance_count', 'note', e.target.value)} placeholder="維護對象" className="w-full text-xs p-1 bg-transparent border-b border-stone-200 focus:border-orange-400 outline-none text-stone-500" />
+                                            </div>
+                                        </div>
+                                    </div>)}
+                                </Card>
+
+                                {/* Projects */}
+                                <Card><SectionHeader icon={Icons.FileText} title="重點專案/任務進度" subtitle="非業績類的行政、優化工作" isOpen={sections.projects} toggle={() => toggleSection('projects')} />
+                                    {sections.projects && (<div className="p-5"><div className="space-y-4">{formData.projects.map(p => (
+                                        <div key={p.id} className="p-4 border border-stone-200 rounded-lg bg-stone-50 relative group">
+                                            <button onClick={() => removeProject(p.id)} className="absolute top-2 right-2 text-stone-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icons.Trash2 /></button>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                                                <div><label className="block text-xs font-bold text-stone-500 mb-1">任務名稱</label><input type="text" value={p.name} onChange={(e) => handleProjectChange(p.id, 'name', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none" placeholder="例: 競品分析" /></div>
+                                                <div><label className="block text-xs font-bold text-stone-500 mb-1">狀態</label><select value={p.status} onChange={(e) => handleProjectChange(p.id, 'status', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none bg-white"><option>未開始</option><option>進行中</option><option>已完成</option><option>卡關中</option></select></div>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                <div><label className="block text-xs font-bold text-stone-500 mb-1">本週產出</label><input type="text" value={p.output} onChange={(e) => handleProjectChange(p.id, 'output', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none" /></div>
+                                                <div><label className="block text-xs font-bold text-stone-500 mb-1">卡關/需協助</label><input type="text" value={p.blocker} onChange={(e) => handleProjectChange(p.id, 'blocker', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none" /></div>
+                                            </div>
+                                        </div>
+                                    ))}</div><button onClick={addProject} className="mt-4 flex items-center gap-2 text-sm text-orange-600 font-medium hover:text-orange-700"><Icons.Plus /> 新增任務</button></div>)}
+                                </Card>
+
+                                {/* Market */}
+                                <Card><SectionHeader icon={Icons.AlertCircle} title="市場觀察與挑戰" subtitle="競品動態與客戶聲音" isOpen={sections.market} toggle={() => toggleSection('market')} />
+                                    {sections.market && (<div className="p-5 space-y-4">
+                                        <div><label className="block text-sm font-bold text-stone-700 mb-1">本週競品動態</label><textarea name="competitor" value={formData.market.competitor} onChange={handleMarketChange} className="w-full p-3 border border-stone-300 rounded-lg focus:border-orange-500 outline-none h-20" placeholder="對手新品或價格..." /></div>
+                                        <div><label className="block text-sm font-bold text-stone-700 mb-1">客戶反饋</label><textarea name="feedback" value={formData.market.feedback} onChange={handleMarketChange} className="w-full p-3 border border-stone-300 rounded-lg focus:border-orange-500 outline-none h-20" placeholder="拒絕理由或建議..." /></div>
+                                        <div><label className="block text-sm font-bold text-stone-700 mb-1">需支援事項</label><textarea name="support" value={formData.market.support} onChange={handleMarketChange} className="w-full p-3 border border-stone-300 rounded-lg focus:border-orange-500 outline-none h-16" placeholder="權限或決策..." /></div>
+                                    </div>)}
+                                </Card>
+
+                                {/* Next Week - Updated with Split Goals */}
+                                <Card><SectionHeader icon={Icons.Target} title="下週計畫與目標" subtitle="開發、維護與行政" isOpen={sections.next} toggle={() => toggleSection('next')} />
+                                    {sections.next && (<div className="p-5">
+                                        <div className="space-y-4 mb-4">
+                                            <div><h4 className="text-sm font-bold text-stone-600 mb-2 flex items-center gap-1"><div className="w-3 h-3"><Icons.Briefcase /></div> 預計企業訂單開發</h4><textarea name="enterprise_plan" value={formData.nextWeek.enterprise_plan} onChange={handleNextWeekChange} className="w-full p-3 border border-stone-300 rounded focus:border-orange-500 outline-none h-20 text-sm" placeholder="例: 補習班EDM跟進" /></div>
+                                            <div><h4 className="text-sm font-bold text-stone-600 mb-2 flex items-center gap-1"><div className="w-3 h-3"><Icons.Building2 /></div> 預計異業通路開發</h4><textarea name="partnership_plan" value={formData.nextWeek.partnership_plan} onChange={handleNextWeekChange} className="w-full p-3 border border-stone-300 rounded focus:border-orange-500 outline-none h-20 text-sm" placeholder="例: 婚宴會館聯繫" /></div>
+                                            <div><h4 className="text-sm font-bold text-stone-600 mb-2 flex items-center gap-1"><div className="w-3 h-3"><Icons.CheckCircle /></div> 預計合作廠商回暖</h4><textarea name="maintenance_plan" value={formData.nextWeek.maintenance_plan} onChange={handleNextWeekChange} className="w-full p-3 border border-stone-300 rounded focus:border-orange-500 outline-none h-20 text-sm" placeholder="例: 月子中心回訪" /></div>
+                                            <div><h4 className="text-sm font-bold text-stone-600 mb-2 flex items-center gap-1"><div className="w-3 h-3"><Icons.ClipboardList /></div> 其他重要任務 (簡報/報告)</h4><textarea name="admin_plan" value={formData.nextWeek.admin_plan} onChange={handleNextWeekChange} className="w-full p-3 border border-stone-300 rounded focus:border-orange-500 outline-none h-20 text-sm" placeholder="例: 主管會議簡報" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-4 gap-2 pt-4 border-t border-stone-100">
+                                            <div><label className="block text-xs font-bold text-stone-700 mb-1">企業(電)</label><input type="number" name="goal_enterprise_phone" value={formData.nextWeek.goal_enterprise_phone} onChange={handleNextWeekChange} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none" /></div>
+                                            <div><label className="block text-xs font-bold text-stone-700 mb-1">企業(信)</label><input type="number" name="goal_enterprise_mail" value={formData.nextWeek.goal_enterprise_mail} onChange={handleNextWeekChange} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none" /></div>
+                                            <div><label className="block text-xs font-bold text-stone-700 mb-1">通路</label><input type="number" name="goal_partner" value={formData.nextWeek.goal_partner} onChange={handleNextWeekChange} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none" /></div>
+                                            <div><label className="block text-xs font-bold text-stone-700 mb-1">回暖</label><input type="number" name="goal_maintenance" value={formData.nextWeek.goal_maintenance} onChange={handleNextWeekChange} className="w-full p-2 border border-stone-300 rounded focus:border-orange-500 outline-none" /></div>
+                                        </div>
+                                    </div>)}
+                                </Card>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 animate-fade-in">
+                                <div className="bg-white shadow-lg p-8 rounded-xl border border-stone-100">
+                                    <div className="border-b-2 border-orange-500 pb-4 mb-6 flex justify-between items-end">
+                                        <div><h1 className="text-2xl font-bold text-stone-800">商務拓展部｜工作週誌</h1><p className="text-stone-500 mt-1">填表人：{formData.name || '未填寫'} ｜ 區間：{formData.startDate} ~ {formData.endDate}</p></div>
+                                        {formData.leaveInfo && <div className="text-right"><span className="text-xs bg-stone-100 text-stone-600 px-2 py-1 rounded">休假：{formData.leaveInfo}</span></div>}
+                                    </div>
+                                    <div className="mb-8">
+                                        <h2 className="text-lg font-bold text-orange-700 mb-3 flex items-center gap-2">一、工作成果數據</h2>
+                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+                                            <div className="p-3 bg-stone-50 rounded text-center">
+                                                <div className="text-xs text-stone-500">企業開發 (總)</div>
+                                                <div className="text-xl font-bold">{Number(formData.metrics.enterprise_dev_phone.val) + Number(formData.metrics.enterprise_dev_mail.val)}</div>
+                                                <div className="text-[10px] text-stone-400 mt-1">電{formData.metrics.enterprise_dev_phone.val} / 信{formData.metrics.enterprise_dev_mail.val}</div>
+                                            </div>
+                                            <div className="p-3 bg-stone-50 rounded text-center"><div className="text-xs text-stone-500">通路合作</div><div className="text-xl font-bold">{formData.metrics.partnership_dev.val}</div></div>
+                                            <div className="p-3 bg-stone-50 rounded text-center"><div className="text-xs text-stone-500">發出報價</div><div className="text-xl font-bold">{formData.metrics.quotes_sent.val}</div></div>
+                                            <div className="p-3 bg-orange-50 rounded text-center text-orange-700"><div className="text-xs">成交訂單</div><div className="text-xl font-bold">{formData.metrics.orders_signed.val}</div></div>
+                                            <div className="p-3 bg-stone-50 rounded text-center"><div className="text-xs text-stone-500">廠商回暖</div><div className="text-xl font-bold">{formData.metrics.maintenance_count.val}</div></div>
+                                        </div>
+                                        <table className="w-full text-sm text-left border-collapse"><tbody>
+                                            <tr className="border-b border-stone-100"><td className="py-2 text-stone-500 font-medium w-24">開發備註</td><td className="py-2">{formData.metrics.enterprise_dev_phone.note || formData.metrics.enterprise_dev_mail.note ? <span>{formData.metrics.enterprise_dev_phone.note} {formData.metrics.enterprise_dev_mail.note}</span> : '-'}</td></tr>
+                                            <tr className="border-b border-stone-100"><td className="py-2 text-stone-500 font-medium">成交/報價</td><td className="py-2">{formData.metrics.quotes_sent.note || formData.metrics.orders_signed.note ? <span>{formData.metrics.quotes_sent.note} {formData.metrics.orders_signed.note && <span className="text-orange-600"> (成交: {formData.metrics.orders_signed.note})</span>}</span> : '-'}</td></tr>
+                                            <tr className="border-b border-stone-100"><td className="py-2 text-stone-500 font-medium">回暖對象</td><td className="py-2">{formData.metrics.maintenance_count.note || '-'}</td></tr>
+                                        </tbody></table>
+                                    </div>
+                                    <div className="mb-8">
+                                        <h2 className="text-lg font-bold text-orange-700 mb-3">二、重點專案進度</h2>
+                                        <table className="w-full text-sm text-left"><thead className="text-xs text-stone-500 uppercase bg-stone-50"><tr><th className="px-3 py-2">狀態</th><th className="px-3 py-2">專案名稱</th><th className="px-3 py-2">產出</th><th className="px-3 py-2">卡關</th></tr></thead><tbody>
+                                            {formData.projects.map(p => p.name && <tr key={p.id} className="border-b border-stone-50"><td className="px-3 py-3"><StatusBadge status={p.status}/></td><td className="px-3 py-3 font-medium">{p.name}</td><td className="px-3 py-3">{p.output}</td><td className="px-3 py-3 text-red-600">{p.blocker}</td></tr>)}
+                                        </tbody></table>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div><h2 className="text-lg font-bold text-orange-700 mb-3">三、市場觀察</h2><div className="text-sm space-y-2"><p><strong>競品：</strong>{formData.market.competitor||'無'}</p><p><strong>反饋：</strong>{formData.market.feedback||'無'}</p><p className="text-red-700"><strong>需支援：</strong>{formData.market.support||'無'}</p></div></div>
+                                        <div><h2 className="text-lg font-bold text-orange-700 mb-3">四、下週計畫</h2><div className="bg-stone-50 p-4 rounded text-sm space-y-2"><p><strong>企業開發：</strong>{formData.nextWeek.enterprise_plan||'無'}</p><p><strong>通路合作：</strong>{formData.nextWeek.partnership_plan||'無'}</p><p><strong>關係回暖：</strong>{formData.nextWeek.maintenance_plan||'無'}</p><p><strong>其他任務：</strong>{formData.nextWeek.admin_plan||'無'}</p><div className="pt-2 border-t mt-2 flex justify-between text-xs font-bold text-stone-500"><span>企業目標: {Number(formData.nextWeek.goal_enterprise_phone) + Number(formData.nextWeek.goal_enterprise_mail)} (電{formData.nextWeek.goal_enterprise_phone}/信{formData.nextWeek.goal_enterprise_mail})</span><span>通路: {formData.nextWeek.goal_partner}</span><span>回暖: {formData.nextWeek.goal_maintenance}</span></div></div></div>
+                                    </div>
+                                    <div className="mt-8 pt-4 border-t text-center text-xs text-stone-400">蒙恩聽障烘焙坊 - 商務拓展部週誌系統 v3.2</div>
+                                </div>
+                                <div className="flex justify-center gap-4 py-8 no-print">
+                                    <button type="button" onClick={copyToClipboard} className="flex items-center gap-2 bg-stone-700 text-white px-6 py-3 rounded-xl shadow hover:bg-stone-800 transition-all font-medium"><Icons.Copy /> 複製文字</button>
+                                    <button type="button" onClick={handlePrint} className="flex items-center gap-2 bg-orange-600 text-white px-6 py-3 rounded-xl shadow hover:bg-orange-700 transition-all font-medium"><Icons.Download /> 列印/下載 PDF</button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
