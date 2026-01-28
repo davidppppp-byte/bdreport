@@ -96,28 +96,36 @@
             const [formData, setFormData] = useState({
                 name: '', startDate: '', endDate: '', leaveInfo: '',
                 metrics: {
-                    enterprise_dev_phone: { val: 0, note: '' }, // 新增: 電話開發
-                    enterprise_dev_mail: { val: 0, note: '' },  // 新增: 信件開發
+                    enterprise_dev_phone: { val: 0, note: '' }, 
+                    enterprise_dev_mail: { val: 0, note: '' },  
                     partnership_dev: { val: 0, note: '' },
                     quotes_sent: { val: 0, note: '' },
                     orders_signed: { val: 0, note: '' },
                     deal_amount: { val: 0, note: '' },
                     maintenance_count: { val: 0, note: '' }
                 },
-                projects: [{ id: 1, name: '', status: '進行中', output: '', blocker: '' }],
+                // 新增 dueDate 欄位
+                projects: [{ id: 1, name: '', status: '進行中', output: '', blocker: '', dueDate: '' }],
                 market: { competitor: '', feedback: '', challenges: '', support: '' },
                 nextWeek: {
                     enterprise_plan: '', partnership_plan: '', maintenance_plan: '', admin_plan: '',
-                    goal_enterprise_phone: 0, goal_enterprise_mail: 0, // 拆分目標
+                    goal_enterprise_phone: 0, goal_enterprise_mail: 0, 
                     goal_partner: 0, goal_maintenance: 0
                 }
             });
 
             // 初始化
             useEffect(() => {
-                const saved = localStorage.getItem('bd_weekly_draft_v7'); // Version bump
+                const saved = localStorage.getItem('bd_weekly_draft_v8'); // Version bump
                 if (saved) {
-                    try { setFormData(JSON.parse(saved)); } catch (e) { console.error(e); }
+                    try { 
+                        const parsed = JSON.parse(saved);
+                        // 資料結構遷移：舊資料如果沒有 dueDate，補上空字串
+                        if (parsed.projects && parsed.projects.length > 0 && !parsed.projects[0].hasOwnProperty('dueDate')) {
+                            parsed.projects = parsed.projects.map(p => ({...p, dueDate: ''}));
+                        }
+                        setFormData(parsed); 
+                    } catch (e) { console.error(e); }
                 } else {
                     const today = new Date();
                     const monday = new Date(today);
@@ -134,7 +142,7 @@
 
             // 自動存檔
             useEffect(() => {
-                localStorage.setItem('bd_weekly_draft_v7', JSON.stringify(formData));
+                localStorage.setItem('bd_weekly_draft_v8', JSON.stringify(formData));
             }, [formData]);
 
             const toggleSection = (key) => setSections(prev => ({ ...prev, [key]: !prev[key] }));
@@ -142,7 +150,7 @@
             const handleMetricChange = (key, field, value) => setFormData(prev => ({ ...prev, metrics: { ...prev.metrics, [key]: { ...prev.metrics[key], [field]: value } } }));
             
             const handleProjectChange = (id, field, value) => setFormData(prev => ({ ...prev, projects: prev.projects.map(p => p.id === id ? { ...p, [field]: value } : p) }));
-            const addProject = () => setFormData(prev => ({ ...prev, projects: [...prev.projects, { id: Date.now(), name: '', status: '進行中', output: '', blocker: '' }] }));
+            const addProject = () => setFormData(prev => ({ ...prev, projects: [...prev.projects, { id: Date.now(), name: '', status: '進行中', output: '', blocker: '', dueDate: '' }] }));
             const removeProject = (id) => setFormData(prev => ({ ...prev, projects: prev.projects.filter(p => p.id !== id) }));
             
             const handleMarketChange = (e) => setFormData(prev => ({ ...prev, market: { ...prev.market, [e.target.name]: e.target.value } }));
@@ -154,7 +162,6 @@
             };
 
             const copyToClipboard = () => {
-                // 計算總企業開發數
                 const totalEnterprise = Number(formData.metrics.enterprise_dev_phone.val) + Number(formData.metrics.enterprise_dev_mail.val);
                 const totalGoal = Number(formData.nextWeek.goal_enterprise_phone) + Number(formData.nextWeek.goal_enterprise_mail);
 
@@ -167,7 +174,13 @@
                 text += `• 成交結果：回簽 ${formData.metrics.orders_signed.val} 家 (總額 $${formData.metrics.deal_amount.val})\n`;
                 text += `• 關係維護：回暖 ${formData.metrics.maintenance_count.val} 家廠商\n\n`;
                 text += `二、重點專案進度\n`;
-                formData.projects.forEach(p => { if(p.name) text += `• [${p.status}] ${p.name}：${p.output} ${p.blocker ? `(卡關: ${p.blocker})` : ''}\n`; });
+                formData.projects.forEach(p => { 
+                    if(p.name) {
+                        text += `• [${p.status}] ${p.name}`;
+                        if(p.dueDate) text += ` (預計: ${p.dueDate})`;
+                        text += `：${p.output} ${p.blocker ? `(卡關: ${p.blocker})` : ''}\n`; 
+                    }
+                });
                 text += `\n三、市場觀察與挑戰\n• 競品：${formData.market.competitor || '無'}\n• 客戶聲音：${formData.market.feedback || '無'}\n• 需支援：${formData.market.support || '無'}\n\n`;
                 text += `四、下週計畫\n• 預計企業開發：${formData.nextWeek.enterprise_plan || '無'}\n• 預計合作通路：${formData.nextWeek.partnership_plan || '無'}\n• 預計回暖廠商：${formData.nextWeek.maintenance_plan || '無'}\n• 其他重要任務：${formData.nextWeek.admin_plan || '無'}\n• 量化目標：企業共 ${totalGoal} 家 (電 ${formData.nextWeek.goal_enterprise_phone}/信 ${formData.nextWeek.goal_enterprise_mail}) / 合作 ${formData.nextWeek.goal_partner} 家 / 回暖 ${formData.nextWeek.goal_maintenance} 家`;
                 
@@ -276,14 +289,15 @@
                                     </div>)}
                                 </Card>
 
-                                {/* Projects */}
+                                {/* Projects - Updated with Due Date */}
                                 <Card><SectionHeader icon={Icons.FileText} title="重點專案/任務進度" subtitle="非業績類的行政、優化工作" isOpen={sections.projects} toggle={() => toggleSection('projects')} />
                                     {sections.projects && (<div className="p-5"><div className="space-y-4">{formData.projects.map(p => (
                                         <div key={p.id} className="p-4 border border-stone-200 rounded-lg bg-stone-50 relative group">
                                             <button onClick={() => removeProject(p.id)} className="absolute top-2 right-2 text-stone-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Icons.Trash2 /></button>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                                                <div><label className="block text-xs font-bold text-stone-500 mb-1">任務名稱</label><input type="text" value={p.name} onChange={(e) => handleProjectChange(p.id, 'name', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none" placeholder="例: 競品分析" /></div>
-                                                <div><label className="block text-xs font-bold text-stone-500 mb-1">狀態</label><select value={p.status} onChange={(e) => handleProjectChange(p.id, 'status', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none bg-white"><option>未開始</option><option>進行中</option><option>已完成</option><option>卡關中</option></select></div>
+                                            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3">
+                                                <div className="md:col-span-5"><label className="block text-xs font-bold text-stone-500 mb-1">任務名稱</label><input type="text" value={p.name} onChange={(e) => handleProjectChange(p.id, 'name', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none" placeholder="例: 競品分析" /></div>
+                                                <div className="md:col-span-3"><label className="block text-xs font-bold text-stone-500 mb-1">狀態</label><select value={p.status} onChange={(e) => handleProjectChange(p.id, 'status', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none bg-white"><option>未開始</option><option>進行中</option><option>已完成</option><option>卡關中</option></select></div>
+                                                <div className="md:col-span-4"><label className="block text-xs font-bold text-stone-500 mb-1">預計完成日</label><input type="text" value={p.dueDate} onChange={(e) => handleProjectChange(p.id, 'dueDate', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none" placeholder="例: 12/25" /></div>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                 <div><label className="block text-xs font-bold text-stone-500 mb-1">本週產出</label><input type="text" value={p.output} onChange={(e) => handleProjectChange(p.id, 'output', e.target.value)} className="w-full p-2 border border-stone-300 rounded text-sm focus:border-orange-500 outline-none" /></div>
@@ -348,15 +362,15 @@
                                     </div>
                                     <div className="mb-8">
                                         <h2 className="text-lg font-bold text-orange-700 mb-3">二、重點專案進度</h2>
-                                        <table className="w-full text-sm text-left"><thead className="text-xs text-stone-500 uppercase bg-stone-50"><tr><th className="px-3 py-2">狀態</th><th className="px-3 py-2">專案名稱</th><th className="px-3 py-2">產出</th><th className="px-3 py-2">卡關</th></tr></thead><tbody>
-                                            {formData.projects.map(p => p.name && <tr key={p.id} className="border-b border-stone-50"><td className="px-3 py-3"><StatusBadge status={p.status}/></td><td className="px-3 py-3 font-medium">{p.name}</td><td className="px-3 py-3">{p.output}</td><td className="px-3 py-3 text-red-600">{p.blocker}</td></tr>)}
+                                        <table className="w-full text-sm text-left"><thead className="text-xs text-stone-500 uppercase bg-stone-50"><tr><th className="px-3 py-2">狀態</th><th className="px-3 py-2">專案名稱</th><th className="px-3 py-2">預計完成</th><th className="px-3 py-2">產出</th><th className="px-3 py-2">卡關</th></tr></thead><tbody>
+                                            {formData.projects.map(p => p.name && <tr key={p.id} className="border-b border-stone-50"><td className="px-3 py-3"><StatusBadge status={p.status}/></td><td className="px-3 py-3 font-medium">{p.name}</td><td className="px-3 py-3 text-stone-500">{p.dueDate || '-'}</td><td className="px-3 py-3">{p.output}</td><td className="px-3 py-3 text-red-600">{p.blocker}</td></tr>)}
                                         </tbody></table>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div><h2 className="text-lg font-bold text-orange-700 mb-3">三、市場觀察</h2><div className="text-sm space-y-2"><p><strong>競品：</strong>{formData.market.competitor||'無'}</p><p><strong>反饋：</strong>{formData.market.feedback||'無'}</p><p className="text-red-700"><strong>需支援：</strong>{formData.market.support||'無'}</p></div></div>
                                         <div><h2 className="text-lg font-bold text-orange-700 mb-3">四、下週計畫</h2><div className="bg-stone-50 p-4 rounded text-sm space-y-2"><p><strong>企業開發：</strong>{formData.nextWeek.enterprise_plan||'無'}</p><p><strong>通路合作：</strong>{formData.nextWeek.partnership_plan||'無'}</p><p><strong>關係回暖：</strong>{formData.nextWeek.maintenance_plan||'無'}</p><p><strong>其他任務：</strong>{formData.nextWeek.admin_plan||'無'}</p><div className="pt-2 border-t mt-2 flex justify-between text-xs font-bold text-stone-500"><span>企業目標: {Number(formData.nextWeek.goal_enterprise_phone) + Number(formData.nextWeek.goal_enterprise_mail)} (電{formData.nextWeek.goal_enterprise_phone}/信{formData.nextWeek.goal_enterprise_mail})</span><span>通路: {formData.nextWeek.goal_partner}</span><span>回暖: {formData.nextWeek.goal_maintenance}</span></div></div></div>
                                     </div>
-                                    <div className="mt-8 pt-4 border-t text-center text-xs text-stone-400">蒙恩聽障烘焙坊 - 商務拓展部週誌系統 v3.2</div>
+                                    <div className="mt-8 pt-4 border-t text-center text-xs text-stone-400">蒙恩聽障烘焙坊 - 商務拓展部週誌系統 v3.4</div>
                                 </div>
                                 <div className="flex justify-center gap-4 py-8 no-print">
                                     <button type="button" onClick={copyToClipboard} className="flex items-center gap-2 bg-stone-700 text-white px-6 py-3 rounded-xl shadow hover:bg-stone-800 transition-all font-medium"><Icons.Copy /> 複製文字</button>
