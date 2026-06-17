@@ -171,7 +171,7 @@
                 if(formData.metrics.enterprise_dev_phone.note || formData.metrics.enterprise_dev_mail.note) text += `  備註: ${formData.metrics.enterprise_dev_phone.note} ${formData.metrics.enterprise_dev_mail.note}\n`;
                 text += `• 合作開發：接觸 ${formData.metrics.partnership_dev.val} 家 (對象: ${formData.metrics.partnership_dev.note || '無'})\n`;
                 text += `• 報價進度：發出 ${formData.metrics.quotes_sent.val} 份\n`;
-                text += `• 成交結果：回簽 ${formData.metrics.orders_signed.val} 家 (總額 $${formData.metrics.deal_amount.val})\n`;
+                text += `• 成交結果：回簽 ${formData.metrics.orders_signed.val} 家\n`;
                 text += `• 關係維護：回暖 ${formData.metrics.maintenance_count.val} 家廠商\n\n`;
                 text += `二、重點專案進度\n`;
                 formData.projects.forEach(p => { 
@@ -270,9 +270,9 @@
                                                     <input type="text" value={formData.metrics.quotes_sent.note} onChange={(e) => handleMetricChange('quotes_sent', 'note', e.target.value)} placeholder="重點客戶" className="w-full text-xs p-1 bg-transparent border-b border-stone-200 focus:border-orange-400 outline-none text-stone-500" />
                                                 </div>
                                                 <div className="bg-orange-50 p-3 rounded-lg border border-orange-100">
-                                                    <div className="flex gap-2 mb-2">
-                                                        <div className="flex-1"><label className="text-sm font-medium text-orange-900 mb-1 block">回簽數</label><input type="number" value={formData.metrics.orders_signed.val} onChange={(e) => handleMetricChange('orders_signed', 'val', e.target.value)} className="w-full p-2 border border-orange-200 rounded focus:border-orange-500 outline-none bg-white" /></div>
-                                                        <div className="flex-1"><label className="text-sm font-medium text-orange-900 mb-1 block">總金額</label><input type="number" value={formData.metrics.deal_amount.val} onChange={(e) => handleMetricChange('deal_amount', 'val', e.target.value)} className="w-full p-2 border border-orange-200 rounded focus:border-orange-500 outline-none bg-white" /></div>
+                                                    <div className="mb-2">
+                                                        <label className="text-sm font-medium text-orange-900 mb-1 block">回簽數</label>
+                                                        <input type="number" value={formData.metrics.orders_signed.val} onChange={(e) => handleMetricChange('orders_signed', 'val', e.target.value)} className="w-full p-2 border border-orange-200 rounded focus:border-orange-500 outline-none bg-white" />
                                                     </div>
                                                     <input type="text" value={formData.metrics.orders_signed.note} onChange={(e) => handleMetricChange('orders_signed', 'note', e.target.value)} placeholder="成交備註" className="w-full p-2 bg-white border border-orange-200 rounded text-sm focus:border-orange-500 outline-none text-stone-600" />
                                                 </div>
@@ -370,7 +370,7 @@
                                         <div><h2 className="text-lg font-bold text-orange-700 mb-3">三、市場觀察</h2><div className="text-sm space-y-2"><p><strong>競品：</strong>{formData.market.competitor||'無'}</p><p><strong>反饋：</strong>{formData.market.feedback||'無'}</p><p className="text-red-700"><strong>需支援：</strong>{formData.market.support||'無'}</p></div></div>
                                         <div><h2 className="text-lg font-bold text-orange-700 mb-3">四、下週計畫</h2><div className="bg-stone-50 p-4 rounded text-sm space-y-2"><p><strong>企業開發：</strong>{formData.nextWeek.enterprise_plan||'無'}</p><p><strong>通路合作：</strong>{formData.nextWeek.partnership_plan||'無'}</p><p><strong>關係回暖：</strong>{formData.nextWeek.maintenance_plan||'無'}</p><p><strong>其他任務：</strong>{formData.nextWeek.admin_plan||'無'}</p><div className="pt-2 border-t mt-2 flex justify-between text-xs font-bold text-stone-500"><span>企業目標: {Number(formData.nextWeek.goal_enterprise_phone) + Number(formData.nextWeek.goal_enterprise_mail)} (電{formData.nextWeek.goal_enterprise_phone}/信{formData.nextWeek.goal_enterprise_mail})</span><span>通路: {formData.nextWeek.goal_partner}</span><span>回暖: {formData.nextWeek.goal_maintenance}</span></div></div></div>
                                     </div>
-                                    <div className="mt-8 pt-4 border-t text-center text-xs text-stone-400">蒙恩聽障烘焙坊 - 商務拓展部週誌系統 v3.4</div>
+                                    <div className="mt-8 pt-4 border-t text-center text-xs text-stone-400">蒙恩聽障烘焙坊 - 商務拓展部週誌系統 v3.5</div>
                                 </div>
                                 <div className="flex justify-center gap-4 py-8 no-print">
                                     <button type="button" onClick={copyToClipboard} className="flex items-center gap-2 bg-stone-700 text-white px-6 py-3 rounded-xl shadow hover:bg-stone-800 transition-all font-medium"><Icons.Copy /> 複製文字</button>
